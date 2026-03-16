@@ -1,0 +1,43 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Athlete {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Original values
+  firstName   String @map("first_name")
+  lastName    String @map("last_name")
+  position    String
+  parentEmail String @map("parent_email")
+
+  // Derived normalized columns (computed on create/update)
+  normalizedFirstName  String @map("normalized_first_name")
+  normalizedLastName   String @map("normalized_last_name")
+  normalizedParentEmail String @map("normalized_parent_email")
+
+  // Double Metaphone phonetic keys (primary codes)
+  metaphoneFirstName String @map("metaphone_first_name")
+  metaphoneLastName  String @map("metaphone_last_name")
+
+  // Unique constraint: prevents exact normalized duplicates with same parent email
+  @@unique([normalizedFirstName, normalizedLastName, normalizedParentEmail], name: "unique_normalized_athlete")
+
+  // Index for fast phonetic lookups during deduplication checks
+  @@index([metaphoneFirstName, metaphoneLastName], name: "idx_metaphone")
+
+  // Index for normalized name lookups
+  @@index([normalizedFirstName, normalizedLastName], name: "idx_normalized_name")
+
+  // Index for parent email lookups
+  @@index([normalizedParentEmail], name: "idx_normalized_email")
+
+  @@map("athletes")
+}
